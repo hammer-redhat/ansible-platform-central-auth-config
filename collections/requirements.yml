@@ -1,0 +1,5 @@
+---
+collections:
+  # Platform gateway (AAP 2.6+) authenticators and maps
+  - name: ansible.platform
+    version: ">=2.5.0"

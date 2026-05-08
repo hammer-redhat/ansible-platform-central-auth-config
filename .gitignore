@@ -1,0 +1,2 @@
+# Local secrets (copy from vars/vault.yml.example)
+vars/vault.yml

@@ -1,0 +1,18 @@
+---
+# Copy to vars/vault.yml and encrypt for real use:
+#   cp vars/vault.yml.example vars/vault.yml
+#   ansible-vault encrypt vars/vault.yml
+#
+# Run the playbook with:
+#   ansible-playbook playbooks/configure_aap_gateway_ldap.yml --ask-vault-pass
+#   # or: --vault-password-file ~/.vault_pass
+#
+# Use EITHER gateway username/password OR an OAuth token (not both required).
+
+# --- Platform gateway API (secret) ---
+vault_aap_username: "admin"
+vault_aap_password: "CHANGE_ME_GATEWAY_PASSWORD"
+# vault_aap_token: "CHANGE_ME_GATEWAY_OAUTH_TOKEN"
+
+# --- LDAP service account (secret) ---
+vault_ldap_bind_password: "CHANGE_ME_LDAP_BIND_PASSWORD"

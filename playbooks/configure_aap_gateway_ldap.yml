@@ -1,0 +1,76 @@
+---
+# Configures Ansible Automation Platform 2.6+ platform gateway LDAP using the
+# supported ansible.platform collection (gateway API, not controller /api/v2/settings/ldap).
+#
+# Prerequisites:
+#   ansible-galaxy collection install -r collections/requirements.yml
+#   cp vars/vault.yml.example vars/vault.yml
+#   # edit secrets, then: ansible-vault encrypt vars/vault.yml
+#
+# Run:
+#   ansible-playbook playbooks/configure_aap_gateway_ldap.yml --ask-vault-pass
+#
+# Optional overrides still win over vars files (e.g. -e 'aap_hostname=https://other.example.com').
+#
+- name: Configure platform gateway LDAP authenticator
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars_files:
+    - ../vars/vault.yml
+    - ../vars/ldap_config.yml
+  vars:
+    aap_username: "{{ vault_aap_username | default(omit) }}"
+    aap_password: "{{ vault_aap_password | default(omit) }}"
+    aap_token: "{{ vault_aap_token | default(omit) }}"
+    ldap_bind_password: "{{ vault_ldap_bind_password }}"
+
+  pre_tasks:
+    - name: Require gateway API credentials
+      ansible.builtin.assert:
+        that:
+          - (aap_username is defined and aap_password is defined) or (aap_token is defined)
+        fail_msg: >-
+          Set vault_aap_username and vault_aap_password, or vault_aap_token, in vars/vault.yml
+          (from vars/vault.yml.example). Extra vars (-e) override vault file values.
+
+    - name: Require LDAP bind password
+      ansible.builtin.assert:
+        that:
+          - ldap_bind_password is defined
+          - (ldap_bind_password | string | length) > 0
+        fail_msg: >-
+          Set vault_ldap_bind_password in vars/vault.yml (see vars/vault.yml.example).
+
+  tasks:
+    - name: Ensure LDAP authenticator is present
+      ansible.platform.authenticator:
+        name: "{{ aap_ldap_authenticator_name }}"
+        type: ansible_base.authentication.authenticator_plugins.ldap
+        enabled: "{{ aap_ldap_enabled }}"
+        order: "{{ aap_ldap_authenticator_order }}"
+        create_objects: "{{ aap_ldap_create_objects }}"
+        remove_users: "{{ aap_ldap_remove_users }}"
+        configuration: "{{ aap_ldap_configuration }}"
+        state: present
+        aap_hostname: "{{ aap_hostname }}"
+        aap_validate_certs: "{{ aap_validate_certs }}"
+        aap_username: "{{ aap_username | default(omit) }}"
+        aap_password: "{{ aap_password | default(omit) }}"
+        aap_token: "{{ aap_token | default(omit) }}"
+      no_log: true
+
+    - name: Ensure LDAP superuser authenticator map
+      ansible.platform.authenticator_map:
+        name: "{{ aap_ldap_map_admin_name }}"
+        authenticator: "{{ aap_ldap_authenticator_name }}"
+        map_type: is_superuser
+        revoke: "{{ aap_ldap_map_admin_revoke }}"
+        triggers: "{{ aap_ldap_map_admin_triggers }}"
+        order: "{{ aap_ldap_map_admin_order }}"
+        state: present
+        aap_hostname: "{{ aap_hostname }}"
+        aap_validate_certs: "{{ aap_validate_certs }}"
+        aap_username: "{{ aap_username | default(omit) }}"
+        aap_password: "{{ aap_password | default(omit) }}"
+        aap_token: "{{ aap_token | default(omit) }}"
