@@ -1,0 +1,125 @@
+---
+# Non-secret SAML and gateway settings. Override per environment with inventory,
+# -e, or a separate env-specific vars file.
+#
+# Copy to vars/saml_config.yml (gitignored) and tune. Secrets:
+#   - SP private key: vars/vault.yml → vault_saml_sp_private_key (see vars/vault.yml.example)
+
+# --- Platform gateway (shared with LDAP-style playbooks) ---
+aap_hostname: "https://aap.example.com"
+aap_validate_certs: true
+
+# --- SAML authenticator (gateway) ---
+aap_saml_authenticator_name: "My SAML Auth Provider"
+aap_saml_authenticator_order: 4
+aap_saml_enabled: true
+aap_saml_create_objects: false
+aap_saml_remove_users: false
+
+# Slug appears in CALLBACK_URL and SSO paths. For an existing authenticator, copy from
+# GET /api/gateway/v1/authenticators/<id>/ (field "slug"). New installs: set after first sync if needed.
+aap_saml_authenticator_slug: "5dab6034-cd3d-47ff-bea8-c0aa1c9e1887"
+
+aap_saml_callback_url: "{{ (aap_hostname | regex_replace('/+$', '')) }}/api/gateway/social/complete/{{ aap_saml_authenticator_slug }}/"
+
+# IdP endpoints (Keycloak / RH-SSO example)
+saml_idp_entity_id: "https://rh-sso.example.com/auth/realms/example"
+saml_idp_url: "https://rh-sso.example.com/auth/realms/example/protocol/saml"
+
+# Attribute names from the IdP assertion (match your IdP claim / friendly names)
+saml_idp_attr_email: "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress"
+saml_idp_attr_first_name: "firstName"
+saml_idp_attr_last_name: "lastName"
+saml_idp_attr_username: "username"
+saml_idp_attr_user_permanent_id: "username"
+
+# Service provider metadata
+saml_sp_entity_id: "saml_entity"
+saml_sp_extra:
+  requestedAuthnContext: false
+
+# Organization / contact metadata (maps to gateway SAML plugin ORG_INFO / contacts)
+saml_org_info:
+  en-US:
+    url: "http://example.com"
+    name: "Hammer-SAML"
+    displayname: "Hammer SAML"
+
+saml_support_contact:
+  givenName: "Chris Hammer"
+  emailAddress: "chrhamme@redhat.com"
+
+saml_technical_contact:
+  givenName: "Chris Hammer"
+  emailAddress: "chrhamme@redhat.com"
+
+# IdP signing certificate (PEM). Rotate when the IdP cert changes.
+saml_idp_x509_cert: |
+  -----BEGIN CERTIFICATE-----
+  MIICoTCCAYkCBgGeF/vKSjANBgkqhkiG9w0BAQsFADAUMRIwEAYDVQQDDAluYS1s
+  YXVuY2gwHhcNMjYwNTExMTY1ODU3WhcNMzYwNTExMTcwMDM3WjAUMRIwEAYDVQQD
+  DAluYS1sYXVuY2gwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCI/AY1
+  X8D3Hf8AT0t7DKC5yDmhsKmYb23yV84ZCeUOZD3XvmzHUiD8lFkSzLCopsL3cQ8a
+  o1gXlmZTs19mOgJCxZxiC9zXxwNjjMHXymFiV8lKbr4txlpHTy4dOZ8RBHkKzHuc
+  jTsTPwABTpYn1kwrfYpq1ybOngD7Vlk+zlL6l+vvAdpX9gQHDYwFTjVo2PZLiEQA
+  jPHWbHV4Z1xmvurv+VrVOtboxQ7HmGSdLhjbQgEykS1oB6iddsRQgaQfN/BouhsN
+  sO5NG7wkJAyf0DC32l27Yz010xX8zxVDoVX0cpIfxV0oTvKrRhgoA36JJc23+nx3
+  q4FHJ0AoUrOZYUPTAgMBAAEwDQYJKoZIhvcNAQELBQADggEBABcCBrJjAbNlnhst
+  l1D7bcs/zpGd8BrYs+7RJeW9dPsBu4VPblUItN7VKmpFqJbKoorRfoRa70lQSxLF
+  q9wwt5//xHHyfvhOHK0lsAAdDf765ILvoAnxsgubUgYngfeurxFXqkpp/xB+1Ktl
+  Yr5DYmSI0Ogv7yK5SbRR+riAV4F1336j1oo93FNg/2Zq0soSsX74JbdN9jmqkgAL
+  tGwM0fzoEJXu9qQNx1iur1ttujBzAcdb/KtISJ1yKtde4DNkTAmlqzlVUTD1hOiu
+  HDFsmuNbveznOR5kQwgPvqzsjq6IZyrLySm6HhZkv1iw2DWwK/JLyTghdAD0N6GB
+  sl5JebY=
+  -----END CERTIFICATE-----
+
+# SP public certificate (PEM). Private key is only in vault (see playbook).
+saml_sp_public_cert: |
+  -----BEGIN CERTIFICATE-----
+  MIIDGjCCAgICCQC+skeZqKCuFjANBgkqhkiG9w0BAQsFADBPMSowKAYDVQQDDCFh
+  YXAtYWFwLmFwcHMuaGFtbWVyLm5hLWxhdW5jaC5jb20xFDASBgNVBAoMC0FBUCBT
+  QU1MIFNQMQswCQYDVQQGEwJVUzAeFw0yNjA1MTExNzE0MjJaFw0zNjA1MDgxNzE0
+  MjJaME8xKjAoBgNVBAMMIWFhcC1hYXAuYXBwcy5oYW1tZXIubmEtbGF1bmNoLmNv
+  bTEUMBIGA1UECgwLQUFQIFNBTUwgU1AxCzAJBgNVBAYTAlVTMIIBIjANBgkqhkiG
+  9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvamL7quMg+mRtRGAKzB6u6gQjX+7AwXRN3Di
+  OBedXsNfw2NE4TnB95tOP4VVLaaZt3Ghy9Arbn+glOjPkTCgyzEFUxpgUGXnDhfc
+  a+XSKdNGM9eYVluYMb13EKtM1dk7im/CCGRVLPgi/qRq0d+qEbL9vaXelulHz1ti
+  r1k5KHKI+FfHpgG4P1QeoSBh/Ghk2JwnXEmhE3/0UWqd7RvVd+HVO+2dla8R/S1c
+  PhedmBdXVTivcHzLUdINFRIrNWgo/oh7IT5X0kIbsQE55mynWuPF1iG2qyg6YDnk
+  sLSj4zgB31jfNd+0ieNcNX8RGPjCnL2od9x5T4ydMxd2FjkUDQIDAQABMA0GCSqG
+  SIb3DQEBCwUAA4IBAQAWQ3McdtQgk5vZS9wWbINIHjcgeDLg5S/SiKza/Y1PbVCI
+  noGTOLGLBgVNJZw88/bEN0U5gEWKmcsn5Dg8NQWb3C6ZDEzCt/ty6E1gaLZOp37h
+  H9OYZyIXHHrRZDlG4REsFRBiL+K2R5bdcFYTYD9teiBZvZXmh3Jyro2H3ft0vHt9
+  lUPlhKrysTofIPP55qOUdH3EeZrP2iO/DDU6X3XMJu6E5jBjB2YxVA1bhVF2uF5n
+  +egyihk63RQf4NvBVifudoZ00eQGCDfiudR07foGs3mhGUw+RP6uvUcJT1CT0L58
+  +6xEFoUoDxxWlzVlJ3fsm3sNGzBGmt+Qv76Y8L71
+  -----END CERTIFICATE-----
+
+# Built configuration dict for ansible.platform.authenticator (SP_PRIVATE_KEY supplied in playbook vars)
+aap_saml_configuration:
+  ADDITIONAL_UNVERIFIED_ARGS: {}
+  CALLBACK_URL: "{{ aap_saml_callback_url }}"
+  EXTRA_DATA: []
+  IDP_ATTR_EMAIL: "{{ saml_idp_attr_email }}"
+  IDP_ATTR_FIRST_NAME: "{{ saml_idp_attr_first_name }}"
+  IDP_ATTR_LAST_NAME: "{{ saml_idp_attr_last_name }}"
+  IDP_ATTR_USERNAME: "{{ saml_idp_attr_username }}"
+  IDP_ATTR_USER_PERMANENT_ID: "{{ saml_idp_attr_user_permanent_id }}"
+  IDP_ENTITY_ID: "{{ saml_idp_entity_id }}"
+  IDP_URL: "{{ saml_idp_url }}"
+  IDP_X509_CERT: "{{ saml_idp_x509_cert }}"
+  ORG_INFO: "{{ saml_org_info }}"
+  SECURITY_CONFIG: {}
+  SP_ENTITY_ID: "{{ saml_sp_entity_id }}"
+  SP_EXTRA: "{{ saml_sp_extra }}"
+  SP_PRIVATE_KEY: "{{ saml_sp_private_key }}"
+  SP_PUBLIC_CERT: "{{ saml_sp_public_cert }}"
+  SUPPORT_CONTACT: "{{ saml_support_contact }}"
+  TECHNICAL_CONTACT: "{{ saml_technical_contact }}"
+
+# --- Authenticator map (allow all) — mirrors UI "mappings" for this authenticator ---
+aap_saml_map_allow_name: "all"
+aap_saml_map_allow_order: 1
+aap_saml_map_allow_revoke: false
+aap_saml_map_allow_triggers:
+  always: {}

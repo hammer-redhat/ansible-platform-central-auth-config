@@ -5,6 +5,7 @@
 #
 # Run the playbook with:
 #   ansible-playbook playbooks/configure_aap_gateway_ldap.yml --ask-vault-pass
+#   ansible-playbook playbooks/configure_aap_gateway_saml.yml --ask-vault-pass
 #   # or: --vault-password-file ~/.vault_pass
 #
 # Use EITHER gateway username/password OR an OAuth token (not both required).
@@ -16,3 +17,11 @@ vault_aap_password: "CHANGE_ME_GATEWAY_PASSWORD"
 
 # --- LDAP service account (secret) ---
 vault_ldap_bind_password: "CHANGE_ME_LDAP_BIND_PASSWORD"
+
+# --- SAML service provider private key (PEM). Required for configure_aap_gateway_saml.yml ---
+# Must pair with the public cert in vars/saml_config.yml (saml_sp_public_cert).
+# vault_saml_sp_private_key: |
+#   -----BEGIN PRIVATE KEY-----
+#   ...
+#   -----END PRIVATE KEY-----
+vault_saml_sp_private_key: "CHANGE_ME_SAML_SP_PRIVATE_KEY_PEM"

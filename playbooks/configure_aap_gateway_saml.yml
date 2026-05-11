@@ -1,0 +1,78 @@
+---
+# Configures Ansible Automation Platform 2.6+ platform gateway SAML using the
+# ansible.platform collection (gateway API).
+#
+# Prerequisites:
+#   ansible-galaxy collection install -r collections/requirements.yml
+#   cp vars/vault.yml.example vars/vault.yml
+#   cp vars/saml_config.yml.example vars/saml_config.yml
+#   # edit secrets and SAML endpoints/certs, then: ansible-vault encrypt vars/vault.yml
+#
+# Run:
+#   ansible-playbook playbooks/configure_aap_gateway_saml.yml --ask-vault-pass
+#
+# Optional overrides still win over vars files (e.g. -e 'aap_hostname=https://other.example.com').
+#
+- name: Configure platform gateway SAML authenticator
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars_files:
+    - ../vars/vault.yml
+    - ../vars/saml_config.yml
+  vars:
+    aap_username: "{{ vault_aap_username | default(omit) }}"
+    aap_password: "{{ vault_aap_password | default(omit) }}"
+    aap_token: "{{ vault_aap_token | default(omit) }}"
+    saml_sp_private_key: "{{ vault_saml_sp_private_key }}"
+
+  pre_tasks:
+    - name: Require gateway API credentials
+      ansible.builtin.assert:
+        that:
+          - (aap_username is defined and aap_password is defined) or (aap_token is defined)
+        fail_msg: >-
+          Set vault_aap_username and vault_aap_password, or vault_aap_token, in vars/vault.yml
+          (from vars/vault.yml.example). Extra vars (-e) override vault file values.
+
+    - name: Require SAML SP private key
+      ansible.builtin.assert:
+        that:
+          - saml_sp_private_key is defined
+          - (saml_sp_private_key | string | length) > 0
+        fail_msg: >-
+          Set vault_saml_sp_private_key in vars/vault.yml (PEM string for the service provider
+          private key matching saml_sp_public_cert). See vars/vault.yml.example.
+
+  tasks:
+    - name: Ensure SAML authenticator is present
+      ansible.platform.authenticator:
+        name: "{{ aap_saml_authenticator_name }}"
+        type: ansible_base.authentication.authenticator_plugins.saml
+        enabled: "{{ aap_saml_enabled }}"
+        order: "{{ aap_saml_authenticator_order }}"
+        create_objects: "{{ aap_saml_create_objects }}"
+        remove_users: "{{ aap_saml_remove_users }}"
+        configuration: "{{ aap_saml_configuration }}"
+        state: present
+        aap_hostname: "{{ aap_hostname }}"
+        aap_validate_certs: "{{ aap_validate_certs }}"
+        aap_username: "{{ aap_username | default(omit) }}"
+        aap_password: "{{ aap_password | default(omit) }}"
+        aap_token: "{{ aap_token | default(omit) }}"
+      no_log: true
+
+    - name: Ensure SAML allow authenticator map
+      ansible.platform.authenticator_map:
+        name: "{{ aap_saml_map_allow_name }}"
+        authenticator: "{{ aap_saml_authenticator_name }}"
+        map_type: allow
+        revoke: "{{ aap_saml_map_allow_revoke }}"
+        triggers: "{{ aap_saml_map_allow_triggers }}"
+        order: "{{ aap_saml_map_allow_order }}"
+        state: present
+        aap_hostname: "{{ aap_hostname }}"
+        aap_validate_certs: "{{ aap_validate_certs }}"
+        aap_username: "{{ aap_username | default(omit) }}"
+        aap_password: "{{ aap_password | default(omit) }}"
+        aap_token: "{{ aap_token | default(omit) }}"

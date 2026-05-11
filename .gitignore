@@ -1,3 +1,4 @@
 # Local secrets (copy from vars/vault.yml.example)
 vars/vault.yml
 vars/ldap_config.yml
+vars/saml_config.yml

@@ -1,6 +1,6 @@
 # ansible-platform-central-auth-config
 
-Ansible content to configure **LDAP authentication on Ansible Automation Platform (AAP) 2.6+** through the **platform gateway** API, using the supported **`ansible.platform`** collection. This replaces the older automation controller pattern (`/api/v2/settings/ldap/`); gateway authenticators live under `/api/gateway/v1/authenticators/`.
+Ansible content to configure **LDAP or SAML authentication on Ansible Automation Platform (AAP) 2.6+** through the **platform gateway** API, using the supported **`ansible.platform`** collection. This replaces the older automation controller pattern (`/api/v2/settings/ldap/`); gateway authenticators live under `/api/gateway/v1/authenticators/`.
 
 Official background: [Configuring authentication in Ansible Automation Platform 2.6](https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.6/html/access_management_and_authentication/gw-configure-authentication).
 
@@ -69,6 +69,22 @@ Optional: **`--check`** for check mode if your installed `ansible.platform` vers
 2. Ensures an **authenticator map** grants `is_superuser` when your configured LDAP trigger matches (for example membership in an admin group).
 
 Extend the repository with additional `ansible.platform.authenticator_map` tasks if you need organization, team, or role maps.
+
+## SAML (platform gateway)
+
+Non-secret SAML settings are composed in **`vars/saml_config.yml`** (copy from **`vars/saml_config.yml.example`**). The playbook **`playbooks/configure_aap_gateway_saml.yml`** ensures:
+
+1. A SAML **authenticator** (`ansible_base.authentication.authenticator_plugins.saml`) with the same configuration shape as the gateway API.
+2. An **authenticator map** of type **`allow`** with trigger **`always`**, matching a typical “allow all IdP users” mapping.
+
+Put the **service provider private key** PEM in **`vars/vault.yml`** as **`vault_saml_sp_private_key`** (it must match **`saml_sp_public_cert`** in your SAML vars file). The gateway stores this encrypted; export it from your original key material, not from the API.
+
+Run:
+
+```bash
+cp vars/saml_config.yml.example vars/saml_config.yml
+ansible-playbook playbooks/configure_aap_gateway_saml.yml --ask-vault-pass
+```
 
 ## LDAPS and custom CAs
 
